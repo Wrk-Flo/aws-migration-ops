@@ -1,0 +1,45 @@
+#!/bin/bash
+
+echo "════════════════════════════════════════════════════════════"
+echo "PHASE 3: WEBHOOK & DNS CUTOVER"
+echo "════════════════════════════════════════════════════════════"
+echo ""
+echo "Start: $(date -u +%T\ UTC)"
+echo ""
+
+echo "=== PHASE 3A: Verify AWS Webhook Endpoint ==="
+echo ""
+echo "Checking AWS Hermes webhook endpoint..."
+ssh -i ~/.ssh/lightsail_default.pem -o StrictHostKeyChecking=no ubuntu@3.147.82.221 'curl -s http://localhost:8080/health 2>/dev/null || echo "Service may not be fully initialized yet"'
+echo ""
+
+echo "=== PHASE 3B: Manual Steps Required ==="
+echo ""
+echo "INSTRUCTION: Please perform these manual steps in Telegram Bot Admin:"
+echo ""
+echo "1. Generate new webhook secret:"
+WEB_SECRET=$(openssl rand -hex 32)
+echo "   Secret: $WEB_SECRET"
+echo ""
+echo "2. Update Telegram Bot Webhook URL:"
+echo "   URL: https://YOUR-DOMAIN/telegram/webhook"
+echo "   Secret: $WEB_SECRET"
+echo ""
+echo "3. Verify webhook delivery:"
+echo "   Send test message to bot"
+echo "   Check logs: ssh hermes-prod-aws journalctl -u hermes -n 20"
+echo ""
+echo "4. Update DNS if using Cloudflare:"
+echo "   Old: 52.183.95.158 (Azure)"
+echo "   New: 3.147.82.221 (AWS)"
+echo ""
+
+echo ""
+echo "════════════════════════════════════════════════════════════"
+echo "PHASE 3 READY"
+echo "════════════════════════════════════════════════════════════"
+echo ""
+echo "Once Telegram webhook updated, proceed to Phase 4"
+echo "Run: ~/PHASE-4-EXECUTION.sh"
+echo ""
+
