@@ -1,0 +1,35 @@
+=== AWS Migration State Summary ===
+Updated: 2026-07-01 12:06 CDT
+
+AZURE SOURCE (STOPPED):
+  - hermes-prod-vm: Stopped (VMStoppedToWarnSubscription)
+  - dev-workspace-prod-vm: Stopped (VMStoppedToWarnSubscription)  
+  - openclaw-prod-vm: Stopped (VMStoppedToWarnSubscription)
+  
+AWS STAGING (RUNNING):
+  - hermes-prod-aws: 3.147.82.221 (7.6GB RAM, 154GB disk) — Repos synced
+  - dev-workspace-aws: 18.191.186.167 (3.7GB RAM, 77GB disk) — Repos synced
+  - openclaw-global-sentinel-aws: 3.144.224.57 (15GB RAM, 309GB disk) — Repos synced
+
+EXISTING AWS PRODUCTION:
+  - eden5188-prod: 3.133.115.102 (Node voice shell @ :5188)
+  - wrkflo-orchestrator-prod: 3.137.161.113 (Redis @ :8100)
+
+BACKGROUND AGENTS (Running):
+  1. hermes-bootstrap: Preparing Hermes service on AWS
+  2. dev-workspace-bootstrap: Preparing Dev Workspace on AWS
+  3. openclaw-state-recovery: Planning data recovery from Azure
+  4. tunnel-migration-plan: Designing Telegram bot cutover
+
+BLOCKERS:
+  - Azure subscription billing warning (all VMs stopped)
+  - Hermes Telegram poller: Can't start on AWS while Azure VM also stopped
+  - OpenClaw persistent state: Need Azure disk export or backup recovery
+  - Dev Workspace: May need operator credentials/secrets
+
+NEXT MILESTONES:
+  [ ] Agents complete preparation reports
+  [ ] Validate Azure disk recovery options
+  [ ] Plan credential injection (secrets not yet distributed)
+  [ ] Run health checks on prepared services (no traffic yet)
+  [ ] Coordinate DNS/tunnel cutover with ops

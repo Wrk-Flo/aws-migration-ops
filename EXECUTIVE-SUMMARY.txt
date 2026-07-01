@@ -1,0 +1,194 @@
+================================================================================
+WRΚFLO AWS MIGRATION - EXECUTIVE SUMMARY
+================================================================================
+
+DATE: 2026-07-01 12:20 CDT
+STATUS: Staging Phase | 3/4 Planning Agents Complete | Awaiting Decisions
+
+================================================================================
+SITUATION
+================================================================================
+
+Azure subscription billing warning has stopped all Wrk.Flo production VMs:
+  • hermes-prod-vm (Telegram bot gateway)
+  • dev-workspace-prod-vm
+  • openclaw-prod-vm (trading + sentinel)
+
+All three services need to migrate to AWS Lightsail to restore availability.
+
+================================================================================
+ACTIONS COMPLETED (Last 90 min)
+================================================================================
+
+✅ Infrastructure Provisioning:
+   • 3x AWS Lightsail instances launched (7.6GB–15GB RAM each)
+   • Baseline tools installed: Git, Docker, Node.js, Python
+   • All GitHub repositories cloned and synced
+   • SSH access verified, health checks deployed
+
+✅ Service Bootstrap Planning:
+   • Hermes agent: Ready for credential injection
+   • Dev Workspace: Ready for service enablement
+   • OpenClaw: Data recovery paths identified (3 options)
+
+✅ Documentation:
+   • Migration dashboard created
+   • Rollback procedures documented
+   • Health check automation deployed
+   • Credential templates prepared (placeholders only)
+
+================================================================================
+KEY DECISIONS REQUIRED (Today)
+================================================================================
+
+DECISION 1: OpenClaw Data Recovery Path
+────────────────────────────────────────
+Azure has 15 daily snapshots available (latest: May 15, ~2 weeks old).
+
+OPTIONS (ranked by reliability):
+  A) Snapshot Export → AWS Disk      | 2–4h | <1 day data loss | ⭐⭐⭐⭐⭐
+  B) Blob Storage Download           | 1–2h | <48h data loss   | ⭐⭐⭐⭐
+  C) Git-Based Rebuild              | 30m  | ~40GB loss       | ⭐⭐⭐
+
+RECOMMENDATION: Path A (Snapshot Export)
+BLOCKER: Requires Azure subscription access (currently read-only due to billing)
+
+ACTION REQUIRED: Choose path A, B, or C. Path A requires Azure ops coordination.
+
+────────────────────────────────────────
+
+DECISION 2: Azure Subscription Billing
+──────────────────────────────────────
+All VMs stopped due to subscription warning. Cannot recover data or restart.
+
+OPTIONS:
+  A) Resolve billing on current subscription (1–4h Azure support)
+  B) Use alternative subscription for disk recovery
+  C) Accept Path C rebuild (30 min, ~40GB data loss in OpenClaw)
+
+RECOMMENDATION: Start with Option A (contact Azure support)
+FALLBACK: Option B or C if billing unresolved in 2 hours
+
+ACTION REQUIRED: Coordinate with Azure support / ops team today.
+
+────────────────────────────────────────
+
+DECISION 3: Secrets Distribution
+────────────────────────────────
+Services cannot start without credentials (LLM API keys, Telegram token, etc.).
+
+CURRENT STATE: Credential templates prepared, but actual secrets NOT distributed.
+
+OPTIONS:
+  A) Vault-based distribution (secure, scalable)
+  B) One-time SSH secret injection (manual, requires ops)
+  C) Encrypted S3 bucket pull (quick, less overhead)
+
+RECOMMENDATION: Option A (Vault) for long-term ops, Option C for quick test
+
+ACTION REQUIRED: Set up secure distribution channel.
+
+================================================================================
+CRITICAL CONSTRAINTS (Do Not Violate)
+================================================================================
+
+1. TELEGRAM BOT DUPLICATION RISK (SEVERITY: HIGH)
+   - Only ONE poller can consume Telegram messages at a time
+   - If both Azure VM and AWS Hermes poll simultaneously, bot breaks
+   - MITIGATION: Explicit coordination, sequential enable/disable
+
+2. OPENCLAW TRADING RISK (SEVERITY: MEDIUM)
+   - Services prepared but NOT yet enabled
+   - Data recovery timing determines when trading can resume
+   - MITIGATION: Data recovery + health checks before enable
+
+3. NO PRODUCTION TRAFFIC MOVED YET (SAFETY: HIGH)
+   - All instances in staging state
+   - No DNS changes, no tunnel repoint
+   - MITIGATION: Full validation before cutover
+
+================================================================================
+TIMELINE
+================================================================================
+
+Assuming decisions made and ops coordination begins now:
+
+  0–30 min    Review tunnel-migration-plan (agent completing)
+  30–120 min  Azure billing coordination + OpenClaw recovery path authorization
+  120–180 min Inject secrets, start non-Telegram services
+  180–240 min OpenClaw data recovery (if path A: snapshot export)
+  240–270 min Telegram bot cutover + webhook coordination
+  ────────────
+  TOTAL:      5–10 hours (dependent on Azure + OpenClaw recovery path)
+
+FASTEST PATH: Path C rebuild + Option C secrets = ~2 hours
+RECOMMENDED PATH: Path A + Option A secrets = ~6 hours (more data retention)
+
+================================================================================
+DECISION CHECKLIST (Today)
+================================================================================
+
+[ ] DECISION 1: Choose OpenClaw recovery path (A/B/C)
+[ ] DECISION 2: Initiate Azure subscription resolution
+[ ] DECISION 3: Choose secrets distribution method (A/B/C)
+[ ] ACTION: Contact Azure support (billing issue)
+[ ] ACTION: Prepare secure secrets distribution channel
+[ ] AWAIT: tunnel-migration-plan agent completion (ETA: 15 min)
+
+================================================================================
+NEXT ACTIONS (If Approved)
+================================================================================
+
+1. IMMEDIATE (Now):
+   • Acknowledge decisions above
+   • Contact Azure support (billing)
+   • Prepare secrets distribution
+
+2. NEXT 30 MIN:
+   • Review tunnel-migration-plan report
+   • Confirm Telegram cutover procedure
+
+3. NEXT 1–2 HOURS:
+   • Authorize + execute OpenClaw recovery path
+   • Stage secrets for distribution
+
+4. NEXT 2–4 HOURS:
+   • Inject secrets to instances
+   • Start Hermes + Dev Workspace services
+   • Coordinate Telegram bot cutover
+
+5. POST-CUTOVER:
+   • Monitor health checks
+   • Validate no duplicate consumers
+   • Prepare rollback if issues found
+
+================================================================================
+RISK ASSESSMENT
+================================================================================
+
+CRITICAL RISKS:
+  ⛔ Azure billing blocking disk access (blocker for data recovery)
+  ⛔ Telegram bot duplication during cutover (could break bot)
+  ⛔ OpenClaw data loss if Path C chosen (40 GB loss)
+
+MITIGATIONS:
+  ✓ Staging instances ready + health checks deployed
+  ✓ Rollback procedures documented
+  ✓ Multiple recovery paths identified
+  ✓ No production traffic moved yet
+  ✓ Backup instances still available (if Azure restored)
+
+OVERALL RISK LEVEL: MEDIUM (manageable with ops coordination)
+
+================================================================================
+RECOMMENDED NEXT STEP
+================================================================================
+
+CALL DECISION MEETING in next 15 minutes to:
+  1. Confirm decisions (OpenClaw path, billing approach, secrets method)
+  2. Review tunnel-migration-plan when available
+  3. Contact Azure support (billing)
+  4. Assign execution tasks
+
+Expected migration completion: 18:30–19:30 CDT (6–7 hours from now)
+

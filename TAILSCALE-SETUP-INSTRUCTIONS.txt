@@ -1,0 +1,56 @@
+════════════════════════════════════════════════════════════
+🔗 TAILSCALE SETUP FOR AWS INSTANCES
+════════════════════════════════════════════════════════════
+
+Tailscale has been installed on all 3 AWS instances.
+Now we need to authenticate them to your Wrk-Flo Tailscale network.
+
+STEP 1: Generate Auth Key
+─────────────────────────
+Go to: https://login.tailscale.com/admin/settings/keys
+
+Click "Generate auth key"
+- Check "Reusable"
+- Click "Generate"
+- Copy the key (starts with tskey-)
+
+STEP 2: Authenticate Each Instance
+───────────────────────────────────
+From your local machine, run these commands:
+
+# hermes-prod-aws
+ssh hermes-prod-aws 'sudo tailscale up --authkey=tskey-PASTE_YOUR_KEY_HERE'
+
+# dev-workspace-aws
+ssh dev-workspace-aws 'sudo tailscale up --authkey=tskey-PASTE_YOUR_KEY_HERE'
+
+# openclaw-global-sentinel-aws
+ssh openclaw-global-sentinel-aws 'sudo tailscale up --authkey=tskey-PASTE_YOUR_KEY_HERE'
+
+STEP 3: Verify Status
+─────────────────────
+tailscale status
+
+Should show all 5 devices:
+  - mosess-macbook-air (your Mac)
+  - iphone-15-pro-max (your iPhone)
+  - hermes-prod-aws (new)
+  - dev-workspace-aws (new)
+  - openclaw-global-sentinel-aws (new)
+
+STEP 4: Access Instances via Tailscale IPs
+───────────────────────────────────────────
+Once authenticated, you can SSH to instances using Tailscale IPs:
+
+Find IPs via: tailscale status
+
+Example:
+  ssh ubuntu@100.120.45.67  (hermes Tailscale IP)
+  ssh ubuntu@100.120.45.68  (dev-workspace Tailscale IP)
+  ssh ubuntu@100.120.45.69  (openclaw Tailscale IP)
+
+════════════════════════════════════════════════════════════
+
+Ready? Go to https://login.tailscale.com/admin/settings/keys
+and generate your auth key now.
+

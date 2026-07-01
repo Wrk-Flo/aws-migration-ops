@@ -1,0 +1,241 @@
+================================================================================
+TELEGRAM BOT MIGRATION: PLAN COMPLETE
+================================================================================
+
+Date: 2026-07-01 12:07 CDT
+Status: Ready for Owner Review (Design Phase)
+
+================================================================================
+CONTEXT SUMMARY
+================================================================================
+
+CURRENT STATE:
+  • Source: Azure VM (hermes-prod-vm) — STOPPED
+  • Target: AWS Lightsail (hermes-prod-aws) — 3.147.82.221 — RUNNING
+  • Domain: eden.wrkflo.biz (Cloudflare tunnel)
+  • Critical Constraint: Single Telegram poller only (duplicate consumers break bot)
+  • Safety Status: Mac + OS1 bridge LaunchAgents disabled (June 28, 2026)
+
+KEY FINDINGS:
+  ✓ Mac Hermes gateway is disabled (LaunchAgent .plist.disabled-20260628T031200Z)
+  ✓ OS1 bridge/autopilot also disabled (previous duplicate-consumer incident fixed)
+  ✓ AWS instance running and ready
+  ✓ hermes-agent docs provide webhook setup templates
+  ✓ Telegram Bot API supports webhook mode (TELEGRAM_WEBHOOK_URL + secret)
+  ✓ Local Mac config does NOT enable Telegram polling (correct for current state)
+
+RISK ASSESSMENT:
+  • High: DNS cutover is point-of-no-return (requires rollback to full revert)
+  • Medium: Credential injection timing (must be done before gateway start)
+  • Low: Azure VM decommission (can wait 24h+ after soak period)
+
+================================================================================
+DELIVERABLES CREATED
+================================================================================
+
+1. TELEGRAM_BOT_MIGRATION_PLAN.md (25.5 KB)
+   ├─ Executive Summary
+   ├─ Current State (verified 2026-07-01)
+   ├─ Local Configuration Review
+   ├─ Cutover Sequence (4 phases, 8 hours to 24h+)
+   ├─ Rollback Procedures (4 scenarios with recovery steps)
+   ├─ Health Check Procedures (daily, weekly, emergency)
+   ├─ Config Templates (env vars, webhook script, YAML)
+   ├─ Tunnel Migration Summary
+   ├─ Credential Status Report
+   └─ Owner Sign-Off Gates
+
+2. TELEGRAM_CUTOVER_CHECKLIST.md (6.8 KB)
+   ├─ Pre-Cutover Validation (T-2h) — 9 items
+   ├─ Webhook Infrastructure (T-1.5h) — 8 items
+   ├─ DNS & Tunnel Cutover (T-0.5h) — 8 items
+   ├─ Gateway Startup (T+0) — 7 items
+   ├─ 1h Checkpoint (T+1h) — 7 items
+   ├─ 6h Check (T+6h) — 7 items
+   ├─ 24h Soak Completion (T+24h) — 8 items
+   ├─ Decommission Decision — Go/No-Go gates
+   └─ Post-Cutover Monitoring — Daily/Weekly cadence
+
+================================================================================
+CUTOVER SEQUENCE AT A GLANCE
+================================================================================
+
+Phase 1: Pre-Cutover Validation (T-2h)
+  □ Verify Azure VM stopped (no duplicate poller)
+  □ Verify Mac LaunchAgent disabled
+  □ AWS instance health check
+  □ Cloudflare tunnel current target documented
+  ⚠️  OWNER APPROVAL GATE #1
+
+Phase 2: Webhook Infrastructure Setup (T-1.5h)
+  □ Generate webhook secret: openssl rand -hex 32
+  □ Add TELEGRAM_WEBHOOK_* to ~/.hermes/.env (AWS)
+  □ Set Telegram webhook URL via Bot API (no rollback!)
+  □ Dry-run gateway startup (verify webhook connection)
+  □ Test AWS security group port 8443
+  ⚠️  OWNER APPROVAL GATE #2
+
+Phase 3: DNS & Tunnel Cutover (T-0.5h)
+  □ Cloudflare: route eden.wrkflo.biz → 3.147.82.221 (AWS IP)
+  □ Wait for DNS propagation (up to 5 min, check TTL)
+  □ Test HTTPS to new endpoint (connectivity check)
+  □ Verify Telegram webhook info (query Bot API)
+  ⚠️  OWNER APPROVAL GATE #3 — This is the point of no return for DNS
+
+Phase 4: Gateway Startup & Monitoring (T+0 to T+24h)
+  □ T+0: Start hermes-gateway on AWS
+  □ T+0: Verify "[telegram] Connected to Telegram (webhook mode)" in logs
+  □ T+0: Send test message to bot
+  □ T+1h: Run full health check, verify no duplicate consumers
+  □ T+6h: Check for any degradation or errors
+  □ T+24h: Complete soak period, collect statistics
+  ⚠️  OWNER APPROVAL GATE #4 — Only after 24h soak, approve Azure decommission
+
+================================================================================
+CRITICAL GATES & ROLLBACK PATHS
+================================================================================
+
+GATE #1 (Pre-Cutover): OWNER MUST VERIFY
+  • Azure VM is STOPPED (power state = deallocated)
+  • Mac LaunchAgent is DISABLED (not in launchctl list)
+  • AWS instance is HEALTHY (SSH works, disk ok, load low)
+  
+  ↳ If failed: Stop and investigate. Do not proceed.
+
+GATE #2 (Webhook Setup): OWNER MUST APPROVE
+  • Dry-run gateway startup shows no errors
+  • "[telegram] Connected to Telegram (webhook mode)" appears in logs
+  • AWS security group allows inbound 8443 (or 443 via Cloudflare)
+  
+  ↳ If failed: Fix root cause (see main plan, Scenario B). Don't start yet.
+
+GATE #3 (DNS Cutover): OWNER MUST APPROVE
+  • DNS propagated: dig eden.wrkflo.biz +short returns AWS IP
+  • HTTPS connectivity verified: curl -I https://eden.wrkflo.biz/ (not timeout)
+  • Telegram webhook info query shows new URL + no recent errors
+  
+  ↳ Point of no return! After this, rolling back takes 30–60 min + temporary downtime.
+
+GATE #4 (After Soak): OWNER MUST APPROVE
+  • 24 hours of zero interruptions
+  • Message volume normal (no dropouts)
+  • Zero duplicate-consumer errors
+  • Azure still stopped, Mac still disabled
+  
+  ↳ If passed: Safe to decommission Azure. If failed: Execute rollback (see Appendix).
+
+================================================================================
+ROLLBACK SCENARIOS & RECOVERY
+================================================================================
+
+Scenario A: Gateway Fails to Start (T+0)
+  ↳ Check ~/.hermes/.env for errors
+  ↳ Fall back to long-polling: unset TELEGRAM_WEBHOOK_URL + restart
+  ↳ If persistent: Restart Azure gateway (re-enables duplicate-consumer risk!)
+
+Scenario B: Telegram Webhook Not Receiving (T+1h)
+  ↳ Verify DNS points to AWS (dig eden.wrkflo.biz)
+  ↳ Check Cloudflare tunnel config
+  ↳ Verify AWS security group port 8443
+  ↳ Check gateway logs for exceptions
+
+Scenario C: Duplicate Consumer Errors (T+6h)
+  ↳ Verify Mac LaunchAgent still disabled
+  ↳ Verify Azure VM still stopped
+  ↳ Check OS1 bridge still disabled
+  ↳ Disable any duplicate, restart gateway
+
+Scenario D: Full Rollback to Azure (Emergency)
+  ↳ Stop AWS gateway
+  ↳ Revert Telegram webhook to empty URL (→ polling mode)
+  ↳ Revert Cloudflare tunnel to old endpoint
+  ↳ Start Azure VM
+  ↳ Start Azure hermes-gateway
+  ↳ Monitor for 24h again
+
+================================================================================
+CREDENTIAL STATUS
+================================================================================
+
+✓ Telegram Bot Token: SET (stored in ~/.hermes/.env on AWS)
+✓ Telegram Webhook Secret: TO BE GENERATED (openssl rand -hex 32)
+✓ Cloudflare API Token: STATUS UNKNOWN — verify before cutover
+✓ Azure VM SSH Key: SET (in ~/.ssh/id_ed25519)
+
+Note: Credentials are NOT printed in this document. Report only as "set", "empty", or "missing".
+
+================================================================================
+HEALTH CHECK PROCEDURES
+================================================================================
+
+DAILY (First 7 Days):
+  systemctl status hermes-gateway | grep Active
+  journalctl -u hermes-gateway --since "24 hours ago" | grep -c ERROR
+  df -h /home/moses/ | tail -1
+
+WEEKLY (Ongoing):
+  ssh hermes-prod-aws -c "/home/moses/.local/bin/hermes-vm-health-check"
+  curl -s "https://api.telegram.org/bot[token]/getWebhookInfo" | jq .
+
+EMERGENCY:
+  journalctl -u hermes-gateway -n 200
+  ps aux | grep telegram
+  launchctl list | grep -i hermes
+
+================================================================================
+NEXT STEPS FOR OWNER
+================================================================================
+
+1. Review TELEGRAM_BOT_MIGRATION_PLAN.md (full plan with all details)
+
+2. Review TELEGRAM_CUTOVER_CHECKLIST.md (item-by-item verification)
+
+3. Schedule cutover window (8–24 hours depending on soak):
+   • Pre-cutover validation: 2 hours
+   • Webhook setup: 1.5 hours
+   • DNS cutover + gateway start: 30 min
+   • Monitoring + soak: 24 hours (can be delegated to on-call)
+
+4. Identify on-call monitor for first 24 hours post-start
+
+5. Print checklist and have owner sign Phase 1 approval before proceeding
+
+6. Execute Phase 1 (pre-cutover validation)
+
+================================================================================
+CONFIGURATION TEMPLATES PROVIDED
+================================================================================
+
+AWS ~/.hermes/.env (Webhook Mode):
+  TELEGRAM_BOT_TOKEN=set
+  TELEGRAM_WEBHOOK_URL=https://eden.wrkflo.biz/telegram
+  TELEGRAM_WEBHOOK_SECRET=set
+  TELEGRAM_WEBHOOK_PORT=8443
+  TELEGRAM_POLLING_ENABLED=false
+
+AWS ~/.hermes/config.yaml (Telegram Section):
+  telegram:
+    reactions: false
+    # proxy_url can be set if Telegram API is blocked
+
+Telegram Bot API Webhook Update Script:
+  update_telegram_webhook.py (included in main plan)
+  Usage: python3 update_telegram_webhook.py --token "..." --webhook-url "..." --secret "..."
+
+================================================================================
+DNS/TUNNEL SUMMARY
+================================================================================
+
+Current: eden.wrkflo.biz → [previous endpoint]
+Target:  eden.wrkflo.biz → 3.147.82.221 (AWS Lightsail IP)
+Method:  Cloudflare tunnel repoint (via API or dashboard)
+TTL:     Check via: dig eden.wrkflo.biz SOA +short
+Rollback: Repoint to old endpoint (5–30 min)
+
+================================================================================
+
+Plan created: 2026-07-01 12:07 CDT
+Ready for owner review and approval.
+Do not execute cutover until owner has signed all approval gates.
+
+================================================================================

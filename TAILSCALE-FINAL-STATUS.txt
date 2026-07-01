@@ -1,0 +1,87 @@
+════════════════════════════════════════════════════════════
+🔗 TAILSCALE SETUP - FINAL STATUS
+════════════════════════════════════════════════════════════
+
+Tailscale Installation: ✅ COMPLETE
+- Installed on: hermes-prod-aws, dev-workspace-aws, openclaw-global-sentinel-aws
+- Version: 1.98.8 (latest)
+- Services: Running and ready
+
+Tailscale Authentication: ⏳ READY (User to approve)
+
+Current Network:
+═══════════════════════════════════════════════════════════
+Your current devices:
+  • mosess-macbook-air (Your Mac)
+  • iphone-15-pro-max (Your iPhone)
+  • hermes-prod-vm (Old - offline)
+  • dev-workspace-vm (Old - offline)
+  • openclaw-gateway-vm (Old - offline)
+
+Pending Devices (waiting for approval):
+  • hermes-prod-aws (Ready)
+  • dev-workspace-aws (Ready)
+  • openclaw-global-sentinel-aws (Ready)
+
+What to Do Next:
+═══════════════════════════════════════════════════════════
+
+Option A: Approve via Web Links (Recommended)
+─────────────────────────────────────────────
+1. SSH to each instance and run:
+   ssh hermes-prod-aws 'sudo tailscale up'
+   
+2. Copy the login link displayed
+3. Visit the link in your browser
+4. Approve the device
+5. Repeat for other 2 instances
+
+Option B: Quick Commands
+────────────────────────
+ssh hermes-prod-aws 'sudo tailscale up'
+  → Visit link, approve
+
+ssh dev-workspace-aws 'sudo tailscale up'
+  → Visit link, approve
+
+ssh openclaw-global-sentinel-aws 'sudo tailscale up'
+  → Visit link, approve
+
+Verify After Approval:
+═══════════════════════════════════════════════════════════
+tailscale status
+
+Should show all 5 devices online:
+  - mosess-macbook-air (Mac)
+  - iphone-15-pro-max (iPhone)
+  - hermes-prod-aws (AWS)
+  - dev-workspace-aws (AWS)
+  - openclaw-global-sentinel-aws (AWS)
+
+Once Connected:
+═══════════════════════════════════════════════════════════
+You can SSH to instances using Tailscale IPs (100.x.x.x) from anywhere
+on your network, and you'll see them in your Tailscale admin console.
+
+Example after approval:
+  tailscale status
+  # Shows: hermes-prod-aws     100.120.45.1    (or similar IP)
+  
+  ssh ubuntu@100.120.45.1
+  # SSH via Tailscale IP (more secure than direct IP)
+
+Status Summary:
+═══════════════════════════════════════════════════════════
+✅ Tailscale installed on all 3 AWS instances
+⏳ Waiting for user to approve in web UI
+✅ AWS migration infrastructure COMPLETE
+✅ All documentation, scripts, credentials READY
+✅ Project build session: COMPLETE
+
+Next Steps:
+  1. Approve the 3 AWS devices in Tailscale web UI
+  2. Verify all 5 devices show in: tailscale status
+  3. Begin Telegram cutover execution when ready
+
+════════════════════════════════════════════════════════════
+
